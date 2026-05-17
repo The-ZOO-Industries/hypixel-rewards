@@ -112,6 +112,38 @@ def print_rewards(app_data: dict[str, Any]) -> None:
     print()
 
 
+def auto_select(rewards: list[dict[str, Any]]) -> tuple[int | None, str]:
+    """Decide whether to auto-pick a reward. Returns (index_or_None, reason).
+
+    Rule: auto-pick any souls reward, UNLESS the page also offers
+      - a LEGENDARY reward (any type), or
+      - a "tokens" reward with amount > 1
+    in which case we leave the choice to the user.
+    """
+    has_legendary = any(
+        (r.get("rarity") or "").upper() == "LEGENDARY" for r in rewards
+    )
+    if has_legendary:
+        return None, "legendary reward available"
+
+    big_tokens = next(
+        (
+            r
+            for r in rewards
+            if (r.get("reward") or "").lower() == "tokens"
+            and int(r.get("amount", 0)) > 1
+        ),
+        None,
+    )
+    if big_tokens is not None:
+        return None, f"{big_tokens['amount']} reward tokens available"
+
+    for i, r in enumerate(rewards):
+        if (r.get("reward") or "").lower() == "souls":
+            return i, f"souls auto-claim ({r.get('amount')})"
+    return None, "no souls on offer"
+
+
 def prompt_choice(n: int) -> int:
     while True:
         try:
@@ -183,7 +215,14 @@ def main(argv: list[str]) -> int:
         return 1
 
     print_rewards(app_data)
-    option = prompt_choice(len(rewards))
+
+    auto_idx, reason = auto_select(rewards)
+    if auto_idx is not None:
+        option = auto_idx
+        print(f"{BOLD}\033[32mAuto-pick:{RESET} option {option + 1} {DIM}({reason}){RESET}")
+    else:
+        print(f"{DIM}Manual pick ({reason}).{RESET}")
+        option = prompt_choice(len(rewards))
 
     chosen = rewards[option]
     print(f"\nClaiming option {option + 1}: {format_reward(chosen)}")

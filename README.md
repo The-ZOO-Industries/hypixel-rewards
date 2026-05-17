@@ -17,8 +17,13 @@ python claim.py https://rewards.hypixel.net/claim-reward/<id>
 ```
 
 Paste the reward link you got in-game (or just the trailing id). The script fetches the
-page, parses the three reward choices, prints them with their rarity, and waits for you
-to pick `1`, `2`, or `3` in the terminal before submitting the claim.
+page, parses the three reward choices, and prints them with their rarity.
+
+### Auto-pick rule
+
+- If souls are on offer, the script auto-claims them — **unless** one of the other two
+  options is a `LEGENDARY` reward, or a `tokens` reward with `amount > 1`. In those cases
+  the choice is left to you, and you pick `1`, `2`, or `3` in the terminal.
 
 ## How it works
 
