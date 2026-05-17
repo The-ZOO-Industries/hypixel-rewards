@@ -112,43 +112,65 @@ def print_rewards(app_data: dict[str, Any]) -> None:
     print()
 
 
+JUNK_LEGENDARY = {"dust"}
+PREFERRED_COIN_GAMES = {
+    "UHC": "UHC Champions",
+    "SURVIVAL_GAMES": "Blitz SG",
+    "WALLS3": "Mega Walls",
+}
+RARITY_ORDER = {"COMMON": 0, "RARE": 1, "EPIC": 2, "LEGENDARY": 3}
+
+
+def _reward(r: dict[str, Any]) -> str:
+    return (r.get("reward") or "").lower()
+
+
+def _rarity(r: dict[str, Any]) -> str:
+    return (r.get("rarity") or "").upper()
+
+
 def auto_select(rewards: list[dict[str, Any]]) -> tuple[int | None, str]:
-    """Decide whether to auto-pick a reward. Returns (index_or_None, reason).
+    """Pick a reward automatically. Returns (index_or_None, reason).
 
-    Rule: auto-pick any souls reward, UNLESS the page also offers
-      - a LEGENDARY reward (other than dust, which isn't worth holding for), or
-      - a "tokens" reward with amount > 1
-    in which case we leave the choice to the user.
+    Order of preference:
+      1. Souls — unless blocked by a real (non-dust) LEGENDARY, or by a
+         "tokens" reward with amount > 1.
+      2. Coins from UHC Champions, Blitz SG, or Mega Walls.
+      3. Highest rarity on offer.
     """
-    JUNK_LEGENDARY = {"dust"}
-    legendary = next(
+    legendary_block = next(
         (
             r
             for r in rewards
-            if (r.get("rarity") or "").upper() == "LEGENDARY"
-            and (r.get("reward") or "").lower() not in JUNK_LEGENDARY
+            if _rarity(r) == "LEGENDARY" and _reward(r) not in JUNK_LEGENDARY
         ),
         None,
     )
-    if legendary is not None:
-        return None, f"legendary {legendary.get('reward')} available"
-
     big_tokens = next(
-        (
-            r
-            for r in rewards
-            if (r.get("reward") or "").lower() == "tokens"
-            and int(r.get("amount", 0)) > 1
-        ),
+        (r for r in rewards if _reward(r) == "tokens" and int(r.get("amount", 0)) > 1),
         None,
     )
-    if big_tokens is not None:
-        return None, f"{big_tokens['amount']} reward tokens available"
+    souls_idx = next(
+        (i for i, r in enumerate(rewards) if _reward(r) == "souls"),
+        None,
+    )
+
+    if souls_idx is not None and legendary_block is None and big_tokens is None:
+        return souls_idx, f"souls ({rewards[souls_idx].get('amount')})"
 
     for i, r in enumerate(rewards):
-        if (r.get("reward") or "").lower() == "souls":
-            return i, f"souls auto-claim ({r.get('amount')})"
-    return None, "no souls on offer"
+        if _reward(r) == "coins" and r.get("gameType") in PREFERRED_COIN_GAMES:
+            return i, f"{PREFERRED_COIN_GAMES[r['gameType']]} coins ({r.get('amount'):,})"
+
+    best_idx, best_rank = None, -1
+    for i, r in enumerate(rewards):
+        rank = RARITY_ORDER.get(_rarity(r), -1)
+        if rank > best_rank:
+            best_rank, best_idx = rank, i
+    if best_idx is not None:
+        return best_idx, f"best rarity ({_rarity(rewards[best_idx])})"
+
+    return None, "no rule matched"
 
 
 def prompt_choice(n: int) -> int:

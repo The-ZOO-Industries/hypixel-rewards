@@ -19,12 +19,16 @@ python claim.py https://rewards.hypixel.net/claim-reward/<id>
 Paste the reward link you got in-game (or just the trailing id). The script fetches the
 page, parses the three reward choices, and prints them with their rarity.
 
-### Auto-pick rule
+### Auto-pick rules (in order)
 
-- If souls are on offer, the script auto-claims them — **unless** one of the other two
-  options is a real `LEGENDARY` reward, or a `tokens` reward with `amount > 1`. In those
-  cases the choice is left to you, and you pick `1`, `2`, or `3` in the terminal.
-- `LEGENDARY dust` does **not** block the souls auto-pick.
+1. **Souls** — if any option is souls, claim it.
+   Exceptions that fall through to rule 2:
+   - a real `LEGENDARY` reward is on offer (`dust` is treated as junk and doesn't block);
+   - a `tokens` reward with `amount > 1` is on offer.
+2. **Preferred coins** — coins from UHC Champions (`UHC`), Blitz SG (`SURVIVAL_GAMES`),
+   or Mega Walls (`WALLS3`).
+3. **Best rarity** — highest rarity (`LEGENDARY > EPIC > RARE > COMMON`); ties go to the
+   first slot.
 
 ## How it works
 
