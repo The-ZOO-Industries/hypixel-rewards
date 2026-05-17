@@ -116,15 +116,22 @@ def auto_select(rewards: list[dict[str, Any]]) -> tuple[int | None, str]:
     """Decide whether to auto-pick a reward. Returns (index_or_None, reason).
 
     Rule: auto-pick any souls reward, UNLESS the page also offers
-      - a LEGENDARY reward (any type), or
+      - a LEGENDARY reward (other than dust, which isn't worth holding for), or
       - a "tokens" reward with amount > 1
     in which case we leave the choice to the user.
     """
-    has_legendary = any(
-        (r.get("rarity") or "").upper() == "LEGENDARY" for r in rewards
+    JUNK_LEGENDARY = {"dust"}
+    legendary = next(
+        (
+            r
+            for r in rewards
+            if (r.get("rarity") or "").upper() == "LEGENDARY"
+            and (r.get("reward") or "").lower() not in JUNK_LEGENDARY
+        ),
+        None,
     )
-    if has_legendary:
-        return None, "legendary reward available"
+    if legendary is not None:
+        return None, f"legendary {legendary.get('reward')} available"
 
     big_tokens = next(
         (

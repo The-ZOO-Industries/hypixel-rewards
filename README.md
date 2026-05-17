@@ -22,8 +22,9 @@ page, parses the three reward choices, and prints them with their rarity.
 ### Auto-pick rule
 
 - If souls are on offer, the script auto-claims them — **unless** one of the other two
-  options is a `LEGENDARY` reward, or a `tokens` reward with `amount > 1`. In those cases
-  the choice is left to you, and you pick `1`, `2`, or `3` in the terminal.
+  options is a real `LEGENDARY` reward, or a `tokens` reward with `amount > 1`. In those
+  cases the choice is left to you, and you pick `1`, `2`, or `3` in the terminal.
+- `LEGENDARY dust` does **not** block the souls auto-pick.
 
 ## How it works
 
